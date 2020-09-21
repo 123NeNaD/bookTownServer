@@ -7,6 +7,8 @@
 var app = require('../app');
 var debug = require('debug')('booktownserver:server');
 var http = require('http');
+var https = require('https');
+var fs = require('fs');
 
 /**
  * Get port from environment and store in Express.
@@ -14,6 +16,7 @@ var http = require('http');
 
 var port = normalizePort(process.env.PORT || '3000');
 app.set('port', port);
+app.set('secPort', port + 443);
 
 /**
  * Create HTTP server.
@@ -28,6 +31,35 @@ var server = http.createServer(app);
 server.listen(port);
 server.on('error', onError);
 server.on('listening', onListening);
+
+/**
+ * Create HTTPS server.
+ */
+//We are configuring HTTPS server.
+//To configure HTTPS server, we will declare a few options for our HTTPS server. For an HTTPS server, 
+//we need to configure the private key and the certificate that our HTTPS server is going to use.
+var options = {
+  //We use "readFileSync()" so that we read this file synchronously which means that the file will be 
+  //read completely before we proceed on to that next step and configure our HTTPS server. 
+  key: fs.readFileSync(__dirname + '/82083089_httplocalhost3000.key'),
+  cert: fs.readFileSync(__dirname + '/82083089_httplocalhost3000.cert')
+};
+
+//We are configuring the secure server.
+var secureServer = https.createServer(options, app);
+
+/**
+* Listen on provided port, on all network interfaces.
+*/
+
+//We are configuring the secure server to listen on port number "secPort".
+secureServer.listen(app.get('secPort'), () => {
+  console.log('Secure Server listening on port', app.get('secPort'));
+});
+//If the "secureServer" receives an error event, then we will let the "onError" which is configured down below, to handle that.
+secureServer.on('error', onError);
+//If the "secureServer" receives an listening event, then we will let the "onListening" which is configured down below, to handle that.
+secureServer.on('listening', onListening);
 
 /**
  * Normalize a port into a number, string, or false.

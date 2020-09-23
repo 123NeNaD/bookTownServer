@@ -36,9 +36,13 @@ var userSchema = new Schema({
         type: String,
         default: ''
     },
+    registered: {
+        type: Boolean,
+        default: false
+    },
     image: {
         type: String,
-        default: 'images/Naruto.jpg'
+        default: 'images/Avatar.png'
     },
     birthDate: {
         type: Date

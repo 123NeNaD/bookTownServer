@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const authenticate = require('../authenticate');
 //"multer" Node module nam omogucava "files uploading".
 const multer = require('multer');
+const cors = require('./cors');
 
 //One of the options that "multer" takes is for the storage. So, "multer" provides this "disk.Storage()" function which 
 //enables us to define the storage engine and in here we can configure a few things. The options that we are going to 
@@ -57,8 +58,8 @@ uploadRouter.use(bodyParser.json());
 //We are going to allow only a "post" method on the "/imageUpload" endpoint. So, the "get", "put" and "delete" will not be allowed
 //on the "/imageUpload" endpoint.
 uploadRouter.route('/')
-    .options((req, res) => { res.sendStatus(200); })
-    .get(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
+    .options(cors.corsWithOptions, (req, res) => { res.sendStatus(200); })
+    .get(cors.cors, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         res.statusCode = 403;
         res.end('GET operation not supported on /imageUpload');
     })
@@ -68,7 +69,7 @@ uploadRouter.route('/')
     //"upload.single" means that it is going to allow us to upload only a single file. That single file will be specified in the upload form from the 
     //client side in the multi-part form upload by using "imageFile" name. When the file is obtained in the code, if we come up to this point, this "upload"
     //will take care of handling the errors if there are any, if the file is not properly uploaded and so on.
-    .post(authenticate.verifyUser, authenticate.verifyAdmin, upload.single('imageFile'), (req, res) => {
+    .post(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, upload.single('imageFile'), (req, res) => {
         //When we come up to this point, the file would have been successfully uploaded and so we need to handle the uploaded file.
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
@@ -79,11 +80,11 @@ uploadRouter.route('/')
         //object that describes the dish, and then upload the dish json document to the server side.
         res.json(req.file);
     })
-    .put(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
+    .put(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         res.statusCode = 403;
         res.end('PUT operation not supported on /imageUpload');
     })
-    .delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
+    .delete(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         res.statusCode = 403;
         res.end('DELETE operation not supported on /imageUpload');
     });

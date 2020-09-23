@@ -3,12 +3,15 @@ const bodyParser = require('body-parser');
 var User = require('../models/users');
 var passport = require('passport');
 var authenticate = require('../authenticate');
+const cors = require('./cors');
+var request = require('request');
 
 var router = express.Router();
 router.use(bodyParser.json());
 
 /* GET users listing. */
-router.get('/', authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
+router.options('*', cors.corsWithOptions, (req, res) => { res.sendStatus(200); });
+router.get('/', cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
   User.find({})
     .then((users) => {
       res.statusCode = 200;
@@ -23,59 +26,77 @@ router.get('/', authenticate.verifyUser, authenticate.verifyAdmin, (req, res, ne
 
 //This "/signup" endpoint will allow a user to sign up on the system. Only the "post" method will be allowed on 
 //"/signup" endpoint. The remaining methods will not be allowed. 
-router.post('/signup', (req, res, next) => {
+router.post('/signup', cors.corsWithOptions, (req, res, next) => {
   //The "passport-local-mongoose" plugin provides us with a method called "register" on the user Schema and model.
   //"register(user, password, callback)" is a convenience method to register a new user instance with a given password. It also checks if username is unique.
-  User.register(new User({ username: req.body.username }), req.body.password, (err, user) => {
-    if (err) {
-      res.statusCode = 500;
-      res.setHeader('Content-Type', 'application/json');
-      res.json({ err: err });
+
+  //If there is no reCAPTCHA token in req.body
+  if (req.body.recaptcha === undefined || req.body.recaptcha === '' || req.body.recaptcha === null) {
+    return res.json({ "responseCode": 1, "responseDesc": "Please select captcha" });
+  }
+  var secretKey = "6Lcprc8ZAAAAAMnJVM6Ks4-w2Zfmja7bp47KCKeF";
+  // req.connection.remoteAddress will provide IP address of connected user.
+  var verificationUrl = "https://www.google.com/recaptcha/api/siteverify?secret=" + secretKey + "&response=" + req.body.recaptcha + "&remoteip=" + req.connection.remoteAddress;
+
+  request(verificationUrl, function (error, response, body) {
+    console.log(body);
+    body = JSON.parse(body);
+    // Success will be true or false depending upon captcha validation.
+    if (body.success !== undefined && !body.success) {
+      return res.json({ "responseCode": 1, "responseDesc": "Failed captcha verification" });
     } else {
-      if (req.body.firstname) {
-        user.firstname = req.body.firstname;
-      }
-      if (req.body.lastname) {
-        user.lastname = req.body.lastname;
-      }
-      if (req.body.image) {
-        user.image = req.body.image;
-      }
-      if (req.body.birthDate) {
-        user.birthDate = req.body.birthDate;
-      }
-      if (req.body.city) {
-        user.city = req.body.city;
-      }
-      if (req.body.country) {
-        user.country = req.body.country;
-      }
-      if (req.body.email) {
-        user.email = req.body.email;
-      }
-      //Saving the modification that we have done to the user
-      user.save((err, user) => {
+      User.register(new User({ username: req.body.username }), req.body.password, (err, user) => {
         if (err) {
           res.statusCode = 500;
           res.setHeader('Content-Type', 'application/json');
           res.json({ err: err });
-          return;
-        }
-        //To ensure that the user registration was seccessful, we will try to authenticate the
-        //same user that we just registered.
-        passport.authenticate('local')(req, res, () => {
-          res.statusCode = 200;
-          res.setHeader('Content-Type', 'application/json');
-          res.json({ success: true, status: 'Registration Successful!' });
-        });
+        } else {
+          if (req.body.firstname) {
+            user.firstname = req.body.firstname;
+          }
+          if (req.body.lastname) {
+            user.lastname = req.body.lastname;
+          }
+          if (req.body.birthDate) {
+            user.birthDate = req.body.birthDate;
+          }
+          if (req.body.city) {
+            user.city = req.body.city;
+          }
+          if (req.body.country) {
+            user.country = req.body.country;
+          }
+          if (req.body.email) {
+            user.email = req.body.email;
+          }
+          //Saving the modification that we have done to the user
+          user.save((err, user) => {
+            if (err) {
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'application/json');
+              res.json({ err: err });
+              return;
+            }
+            //To ensure that the user registration was seccessful, we will try to authenticate the
+            //same user that we just registered.
+            passport.authenticate('local')(req, res, () => {
+              res.statusCode = 200;
+              res.setHeader('Content-Type', 'application/json');
+              res.json({ success: true, status: 'Registration Successful!' });
+            });
+          });
+        };
       });
-    };
+    }
   });
+
+
 });
 
 
-router.post('/login', (req, res, next) => {
+router.post('/login', cors.corsWithOptions, (req, res, next) => {
   passport.authenticate('local', (err, user, info) => {
+    console.log("korisnike je", user);
     if (err) {
       return next(err);
     }
@@ -85,29 +106,37 @@ router.post('/login', (req, res, next) => {
       res.statusCode = 401;
       res.setHeader('Content-Type', 'application/json');
       res.json({ success: false, status: 'Login Unsuccessful!', err: info });
-    }
-    //The "passport.authenticate" will add method "req.logIn".
-    //So, we will try to login the user. We are passing the "user" as the parameter to "req.logIn()".
-    req.logIn(user, (err) => {
-      if (err) {
-        res.statusCode = 401;
+    } else {
+      if (!user.registered) {
+        res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
-        res.json({ success: false, status: 'Login Unsuccessful!', err: 'Could not log in user!' });
+        res.json({ success: false, status: 'Registration is pending!' });
+      } else {
+        //The "passport.authenticate" will add method "req.logIn".
+        //So, we will try to login the user. We are passing the "user" as the parameter to "req.logIn()".
+        req.logIn(user, (err) => {
+          if (err) {
+            res.statusCode = 401;
+            res.setHeader('Content-Type', 'application/json');
+            res.json({ success: false, status: 'Login Unsuccessful!', err: 'Could not log in user!' });
+          }
+          //Ako smo dosli do ovde, to znaci da se korisnik uspesno ulogovao, i mozemo da napravimo JSON Web Token
+          //koji saljemo korisniku.
+          console.log("NIJE REGISTROVAN4!")
+          var token = authenticate.getToken({ _id: req.user._id });
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'application/json');
+          res.json({ success: true, status: 'Login Successful!', token: token });
+        });
       }
-      //Ako smo dosli do ovde, to znaci da se korisnik uspesno ulogovao, i mozemo da napravimo JSON Web Token
-      //koji saljemo korisniku.
-      var token = authenticate.getToken({ _id: req.user._id });
-      res.statusCode = 200;
-      res.setHeader('Content-Type', 'application/json');
-      res.json({ success: true, status: 'Login Successful!', token: token });
-    });
+    }
   })(req, res, next);
 });
 
 //This "/logout" endpoint will allow a user to logout from the system. Only the "get" method will be allowed on 
 //"/logout" endpoint. The remaining methods will not be allowed. We are doing the "get" for logging out because for
 //logging out we dont need  to submit any information.
-router.get('/logout', (req, res, next) => {
+router.get('/logout', cors.corsWithOptions, (req, res, next) => {
   //Brisemo JSON Web Token na klijentskoj strani i tako radimo Logout-ovanje.
   res.redirect('/');
 
@@ -119,7 +148,7 @@ router.get('/logout', (req, res, next) => {
 //we are including another endpoint called "/checkJWTtoken", so if you do a GET to the "/checkJWTToken" by including the token into the 
 //Authorization Header, then this call will return a true or false to indicate to you whether the JSON Web Token is still valid or not.
 //If it is not valid then the client side can initiate another login for For the user to obtain a new JSON Web Token, if required.
-router.get('/checkJWTtoken', (req, res, next) => {
+router.get('/checkJWTtoken', cors.corsWithOptions, (req, res, next) => {
   passport.authenticate('jwt', { session: false }, (err, user, info) => {
     if (err) {
       return next(err);
@@ -136,5 +165,23 @@ router.get('/checkJWTtoken', (req, res, next) => {
     }
   })(req, res, next);
 });
+
+router.route('/:username')
+  // .all((req, res, next) => {
+  //     res.statusCode = 200;
+  //     res.setHeader('Content-Type', 'text/plain');
+  //     next();
+  // })
+  .get(cors.cors, authenticate.verifyUser, (req, res, next) => {
+    User.findOne({ username: req.params.username })
+      .then((user) => {
+        console.log("Saljem korisnika sa servera", user);
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(user);
+      }, (err) => next(err))
+      .catch((err) => next(err));
+  })
+
 
 module.exports = router;

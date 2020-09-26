@@ -69,8 +69,9 @@ uploadRouter.route('/')
     //"upload.single" means that it is going to allow us to upload only a single file. That single file will be specified in the upload form from the 
     //client side in the multi-part form upload by using "imageFile" name. When the file is obtained in the code, if we come up to this point, this "upload"
     //will take care of handling the errors if there are any, if the file is not properly uploaded and so on.
-    .post(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, upload.single('imageFile'), (req, res) => {
+    .post(cors.corsWithOptions, authenticate.verifyUser, upload.single('imageFile'), (req, res) => {
         //When we come up to this point, the file would have been successfully uploaded and so we need to handle the uploaded file.
+        console.log("Fajl koji se uploaduje je:", req.file);
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
         //We will pass back this "req.file" object from the server back to the client. The "req.file" contains a lot of information about the file that has
@@ -78,7 +79,7 @@ uploadRouter.route('/')
         //where it needs to know the location of this image file. For example, if you are trying to upload a dish and the details of the dish to the server
         //side, you might upload the image to the server and then you get back the URL of that image. Then you can include the URL of that image into the json
         //object that describes the dish, and then upload the dish json document to the server side.
-        res.json(req.file);
+        res.json({ image: req.file, status: 'Image Uploaded Successfully!' });
     })
     .put(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         res.statusCode = 403;

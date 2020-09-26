@@ -78,7 +78,11 @@ var userSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Book'
     }],
-    comments: [commentSchema]
+    comments: [commentSchema],
+    following: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }]
 }, {
     timestamps: true
 });

@@ -29,16 +29,15 @@ var bookSchema = new Schema({
     },
     description: {
         type: String,
-        required: true,
         default: ''
     },
     image: {
         type: String,
-        default: ''
+        default: 'images/Book.png'
     },
     autors: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        type: String,
+        require: true
     }],
     published: {
         type: Date,
@@ -49,12 +48,10 @@ var bookSchema = new Schema({
         require: true
     }],
     comments: [commentSchema],
-    averageRating: {
-        type: Number,
-        min: 1,
-        max: 10,
-        required: true
-    }
+    approved: {
+        type: Boolean,
+        default: false
+    },
 }, {
     timestamps: true
 });

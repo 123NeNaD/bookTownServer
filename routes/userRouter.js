@@ -12,7 +12,7 @@ router.use(bodyParser.json());
 /* GET users listing. */
 router.options('*', cors.corsWithOptions, (req, res) => { res.sendStatus(200); });
 router.get('/', cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
-  User.find({})
+  User.find(req.query)
     .then((users) => {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'application/json');
@@ -23,6 +23,16 @@ router.get('/', cors.corsWithOptions, authenticate.verifyUser, authenticate.veri
     }, (err) => next(err))
     .catch((err) => next(err));
 });
+router.post('/', cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
+  User.create(req.body)
+    .then((user) => {
+      console.log('User Created ', user);
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/json');
+      res.json(user);
+    }, (err) => next(err))
+    .catch((err) => next(err));
+})
 
 //This "/signup" endpoint will allow a user to sign up on the system. Only the "post" method will be allowed on 
 //"/signup" endpoint. The remaining methods will not be allowed. 
@@ -96,7 +106,6 @@ router.post('/signup', cors.corsWithOptions, (req, res, next) => {
 
 router.post('/login', cors.corsWithOptions, (req, res, next) => {
   passport.authenticate('local', (err, user, info) => {
-    console.log("korisnike je", user);
     if (err) {
       return next(err);
     }
@@ -167,21 +176,100 @@ router.get('/checkJWTtoken', cors.corsWithOptions, (req, res, next) => {
 });
 
 router.route('/:username')
-  // .all((req, res, next) => {
-  //     res.statusCode = 200;
-  //     res.setHeader('Content-Type', 'text/plain');
-  //     next();
-  // })
   .get(cors.cors, authenticate.verifyUser, (req, res, next) => {
     User.findOne({ username: req.params.username })
       .then((user) => {
-        console.log("Saljem korisnika sa servera", user);
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
         res.json(user);
       }, (err) => next(err))
       .catch((err) => next(err));
   })
+  .put(cors.corsWithOptions, authenticate.verifyUser, (req, res, next) => {
+    console.log(req.params);
+    User.findOne({ username: req.params.username })
+      .then((user) => {
+        if (req.user.username === user.username || req.user.type === "admin") {
+          User.findOneAndUpdate({ username: user.username }, {
+            //The update will be in the body of the message.
+            $set: req.body
+          }, { new: true })
+            .then((user) => {
+              res.statusCode = 200;
+              res.setHeader('Content-Type', 'application/json');
+              res.json(user);
+            }, (err) => next(err))
+            .catch((err) => next(err));
+        } else {
+          res.statusCode = 401;
+          res.end('You can change only your data!');
+        }
+      }, (err) => next(err))
+      .catch((err) => next(err));
+  })
+  .post(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
+    res.statusCode = 403;
+    res.end('POST operation not supported on /users/' + req.params.username);
+  })
+  .delete(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
+    User.findOneAndDelete({ username: req.params.username })
+      .then((resp) => {
+        res.statusCode = 200;
+        res.end('User ' + resp.username + ' successfully deleted.');
+      }, (err) => next(err))
+      .catch((err) => next(err));
+  });
+
+
+router.route('/:username/changePassword')
+  .get(cors.cors, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
+    res.statusCode = 403;
+    res.end('GET operation not supported on /users/' + req.params.username + '/changePassword');
+  })
+  .put(cors.corsWithOptions, authenticate.verifyUser, (req, res, next) => {
+    console.log(req.params);
+    User.findOne({ username: req.params.username })
+      .then((user) => {
+        if (req.user.username === user.username || req.user.type === "admin") {
+          User.findOne({ username: req.params.username })
+            .then((user) => {
+              user.changePassword(req.body.oldPassword, req.body.newPassword)
+                .then(() => {
+                  res.statusCode = 200;
+                  res.setHeader('Content-Type', 'application/json');
+                  return res.json({ status: 'Password Changed Successfully', success: true });
+                }, (err) => {
+                  res.statusCode = 200;
+                  res.setHeader('Content-Type', 'application/json');
+                  return res.json({ status: 'Incorect Current Password.', success: false });
+                })
+                .catch((err) => {
+                  console.log("Greska2");
+                  next(err)
+                });
+            }, (err) => {
+              console.log("Greska3");
+              next(err)
+            })
+            .catch((err) => {
+              console.log("Greska4");
+              next(err)
+            });
+        } else {
+          res.statusCode = 401;
+          res.end('You can change only your password!');
+        }
+      }, (err) => next(err))
+      .catch((err) => next(err));
+  })
+  .post(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
+    res.statusCode = 403;
+    res.end('POST operation not supported on /users/' + req.params.username + '/changePassword');
+  })
+  .delete(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
+    res.statusCode = 403;
+    res.end('DELETE operation not supported on /users/' + req.params.username + '/changePassword');
+  });
 
 
 module.exports = router;

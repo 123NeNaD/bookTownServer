@@ -90,7 +90,7 @@ exports.verifyAdmin = (req, res, next) => {
 
 exports.verifyModerator = (req, res, next) => {
     if (req.user) {
-        if (req.user.type == "moderator") {
+        if (req.user.type == "moderator" || req.user.type == "admin") {
             return next();
         } else {
             var err = new Error('You are not authorized to perform this operation!');

@@ -178,6 +178,7 @@ router.get('/checkJWTtoken', cors.corsWithOptions, (req, res, next) => {
 router.route('/:username')
   .get(cors.cors, authenticate.verifyUser, (req, res, next) => {
     User.findOne({ username: req.params.username })
+      .populate('comments.book')
       .then((user) => {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
@@ -241,7 +242,7 @@ router.route('/:username/changePassword')
                 }, (err) => {
                   res.statusCode = 200;
                   res.setHeader('Content-Type', 'application/json');
-                  return res.json({ status: 'Incorect Current Password.', success: false });
+                  return res.json({ status: 'Incorrect Current Password.', success: false });
                 })
                 .catch((err) => {
                   console.log("Greska2");

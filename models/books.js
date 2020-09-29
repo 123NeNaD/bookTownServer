@@ -27,6 +27,9 @@ var bookSchema = new Schema({
         required: true,
         unique: true
     },
+    pageNumber: {
+        type: Number
+    },
     description: {
         type: String,
         default: ''
@@ -35,7 +38,7 @@ var bookSchema = new Schema({
         type: String,
         default: 'images/Book.png'
     },
-    autors: [{
+    authors: [{
         type: String,
         require: true
     }],
@@ -43,9 +46,9 @@ var bookSchema = new Schema({
         type: Date,
         required: true
     },
-    types: [{
+    genres: [{
         type: String,
-        require: true
+        required: true
     }],
     comments: [commentSchema],
     approved: {

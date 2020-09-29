@@ -18,6 +18,9 @@ var commentSchema = new Schema({
         type: String,
         maxlength: 1000
     },
+    bookCommentId: {
+        type: mongoose.Schema.Types.ObjectId
+    },
     book: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Book'

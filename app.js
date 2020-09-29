@@ -14,8 +14,9 @@ var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/userRouter');
 var uploadRouter = require('./routes/uploadRouter');
 var bookRouter = require('./routes/bookRouter');
-var publicEventRouter = require('./routes/publicEventRouter')
-var privateEventRouter = require('./routes/privateEventRouter')
+var publicEventRouter = require('./routes/publicEventRouter');
+var privateEventRouter = require('./routes/privateEventRouter');
+var genreRouter = require('./routes/grenreRouter')
 
 const url = config.mongoUrl;
 //This will establish the connection to the databse
@@ -56,6 +57,7 @@ app.use('/imageUpload', uploadRouter);
 app.use('/books', bookRouter);
 app.use('/publicEvents', publicEventRouter);
 app.use('/privateEvents', privateEventRouter);
+app.use('/genres', genreRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

@@ -45,7 +45,7 @@ router.route('/:bookId')
             }, (err) => next(err))
             .catch((err) => next(err));
     })
-    .put(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
+    .put(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyModerator, (req, res, next) => {
         Books.findOneAndUpdate({ _id: req.params.bookId }, {
             //The update will be in the body of the message.
             $set: req.body
@@ -63,9 +63,10 @@ router.route('/:bookId')
     })
     .delete(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         Books.findOneAndDelete({ _id: req.params.bookId })
-            .then((resp) => {
+            .then((book) => {
                 res.statusCode = 200;
-                res.end('Book ' + resp.name + ' successfully deleted.');
+                res.setHeader('Content-Type', 'application/json');
+                res.json(book);
             }, (err) => next(err))
             .catch((err) => next(err));
     });

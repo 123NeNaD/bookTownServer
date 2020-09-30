@@ -9,6 +9,7 @@ router.use(bodyParser.json());
 router.options('*', cors.corsWithOptions, (req, res) => { res.sendStatus(200); });
 router.get('/', cors.corsWithOptions, authenticate.verifyUser, (req, res, next) => {
     publicEvents.find(req.query)
+        .populate("author")
         .then((publicEvent) => {
             res.statusCode = 200;
             res.setHeader('Content-Type', 'application/json');

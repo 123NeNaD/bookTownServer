@@ -216,9 +216,10 @@ router.route('/:username')
   })
   .delete(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
     User.findOneAndDelete({ username: req.params.username })
-      .then((resp) => {
+      .then((user) => {
         res.statusCode = 200;
-        res.end('User ' + resp.username + ' successfully deleted.');
+        res.setHeader('Content-Type', 'application/json');
+        res.json(user);
       }, (err) => next(err))
       .catch((err) => next(err));
   });

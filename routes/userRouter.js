@@ -11,7 +11,7 @@ router.use(bodyParser.json());
 
 /* GET users listing. */
 router.options('*', cors.corsWithOptions, (req, res) => { res.sendStatus(200); });
-router.get('/', cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
+router.get('/', cors.corsWithOptions, authenticate.verifyUser, (req, res, next) => {
   User.find(req.query)
     .then((users) => {
       res.statusCode = 200;
@@ -179,6 +179,8 @@ router.route('/:username')
   .get(cors.cors, authenticate.verifyUser, (req, res, next) => {
     User.findOne({ username: req.params.username })
       .populate('comments.book')
+      .populate('followers')
+      .populate('following')
       .then((user) => {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
@@ -272,5 +274,56 @@ router.route('/:username/changePassword')
     res.end('DELETE operation not supported on /users/' + req.params.username + '/changePassword');
   });
 
+router.put('/follow/:username', authenticate.verifyUser, cors.corsWithOptions, (req, res, next) => {
+  User.findOne({ username: req.params.username })
+    .then((user) => {
+      user.followers.push(req.user._id);
+      user.save()
+        .then((user) => {
+          req.user.following.push(user._id);
+          req.user.save()
+            .then((user) => {
+              User.findOne({ username: req.params.username })
+                .then((user) => {
+                  res.statusCode = 200;
+                  res.setHeader('Content-Type', 'application/json');
+                  res.json(user);
+                }, (err) => next(err))
+            }, (err) => next(err));
+        }, (err) => next(err));
+    }, (err) => next(err))
+    .catch((err) => next(err));
+});
+
+router.put('/unfollow/:username', authenticate.verifyUser, cors.corsWithOptions, (req, res, next) => {
+  User.findOne({ username: req.params.username })
+    .then((user) => {
+      for (var i = 0; i < user.followers.length; i++) {
+        //With ".id()" we are accessing the subodcument by specifying the "_id" of subdocument as a parameter to ".id()".
+        if (user.followers[i].toString() == req.user._id.toString()) {
+          user.followers.splice(i, 1);
+        }
+      }
+      user.save()
+        .then((user) => {
+          for (var i = 0; i < req.user.following.length; i++) {
+            //With ".id()" we are accessing the subodcument by specifying the "_id" of subdocument as a parameter to ".id()".
+            if (req.user.following[i].toString() == user._id.toString()) {
+              req.user.following.splice(i, 1);
+            }
+          }
+          req.user.save()
+            .then((user) => {
+              User.findOne({ username: req.params.username })
+                .then((user) => {
+                  res.statusCode = 200;
+                  res.setHeader('Content-Type', 'application/json');
+                  res.json(user);
+                }, (err) => next(err))
+            }, (err) => next(err));
+        }, (err) => next(err));
+    }, (err) => next(err))
+    .catch((err) => next(err));
+});
 
 module.exports = router;

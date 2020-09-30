@@ -7,7 +7,7 @@ var router = express.Router();
 router.use(bodyParser.json());
 
 router.options('*', cors.corsWithOptions, (req, res) => { res.sendStatus(200); });
-router.get('/', cors.corsWithOptions, (req, res, next) => {
+router.get('/', cors.corsWithOptions, authenticate.verifyUser, (req, res, next) => {
     publicEvents.find(req.query)
         .then((publicEvent) => {
             res.statusCode = 200;
@@ -23,6 +23,7 @@ router.post('/', cors.corsWithOptions, authenticate.verifyUser, authenticate.ver
     publicEvents.create(req.body)
         .then((publicEvent) => {
             publicEvent.author = req.user._id;
+            publicEvent.type = "public";
             publicEvent.save((err, publicEvent) => {
                 if (err) {
                     res.statusCode = 500;

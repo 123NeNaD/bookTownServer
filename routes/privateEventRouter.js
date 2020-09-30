@@ -23,6 +23,7 @@ router.post('/', cors.corsWithOptions, authenticate.verifyUser, (req, res, next)
     privateEvents.create(req.body)
         .then((privateEvent) => {
             privateEvent.author = req.user._id;
+            privateEvent.type = "private";
             privateEvent.save((err, privateEvent) => {
                 if (err) {
                     res.statusCode = 500;

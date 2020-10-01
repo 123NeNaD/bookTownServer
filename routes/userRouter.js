@@ -181,6 +181,9 @@ router.route('/:username')
       .populate('comments.book')
       .populate('followers')
       .populate('following')
+      .populate('presentBooks')
+      .populate('pastBooks')
+      .populate('futureBooks')
       .then((user) => {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');

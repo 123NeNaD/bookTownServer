@@ -309,4 +309,205 @@ router.route('/:bookId/comments/:commentId')
             .catch((err) => next(err));
     });
 
+router.route('/addBook/toReadingList')
+    .put(cors.corsWithOptions, authenticate.verifyUser, (req, res, next) => {
+        Books.findOne({ _id: req.body.bookId })
+            .then((book) => {
+                if ((req.user.username == req.body.user) || (req.user.type == "admin")) {
+                    if (req.user.presentBooks.includes(req.body.bookId)) {
+                        res.statusCode = 200;
+                        res.setHeader('Content-Type', 'application/json');
+                        res.json({ message: 'Book ' + req.body.bookId + ' is already in Reading list.' });
+                    } else {
+                        req.user.presentBooks.push(req.body.bookId);
+                        req.user.save()
+                            .then((user) => {
+                                console.log("Knjiga je dodata u Reading listu");
+                                res.statusCode = 200;
+                                res.setHeader('Content-Type', 'application/json');
+                                res.json(user.presentBooks);
+                            }, error => {
+                                console.log(error);
+                            })
+                    }
+                } else {
+                    res.statusCode = 404;
+                    res.end('You can add books only to your own lists.');
+                }
+            }, (err) => {
+                res.statusCode = 404;
+                res.end('Book ' + req.body.bookId + 'does not exist.');
+            })
+            .catch((err) => {
+                next(err)
+            });
+    });
+
+router.route('/addBook/toFinishedList')
+    .put(cors.corsWithOptions, authenticate.verifyUser, (req, res, next) => {
+        Books.findOne({ _id: req.body.bookId })
+            .then((book) => {
+                if ((req.user.username == req.body.user) || (req.user.type == "admin")) {
+                    if (req.user.pastBooks.includes(req.body.bookId)) {
+                        res.statusCode = 200;
+                        res.setHeader('Content-Type', 'application/json');
+                        res.json({ message: 'Book ' + req.body.bookId + ' is already in Finished list.' });
+                    } else {
+                        req.user.pastBooks.push(req.body.bookId);
+                        req.user.save()
+                            .then((user) => {
+                                console.log("Knjiga je dodata u Finished listu");
+                                res.statusCode = 200;
+                                res.setHeader('Content-Type', 'application/json');
+                                res.json(user.pastBooks);
+                            }, error => {
+                                console.log(error);
+                            })
+                    }
+                } else {
+                    res.statusCode = 404;
+                    res.end('You can add books only to your own lists.');
+                }
+            }, (err) => {
+                res.statusCode = 404;
+                res.end('Book ' + req.body.bookId + 'does not exist.');
+            })
+            .catch((err) => {
+                next(err)
+            });
+    });
+
+router.route('/addBook/toPendingList')
+    .put(cors.corsWithOptions, authenticate.verifyUser, (req, res, next) => {
+        Books.findOne({ _id: req.body.bookId })
+            .then((book) => {
+                if ((req.user.username == req.body.user) || (req.user.type == "admin")) {
+                    if (req.user.futureBooks.includes(req.body.bookId)) {
+                        res.statusCode = 200;
+                        res.setHeader('Content-Type', 'application/json');
+                        res.json({ message: 'Book ' + req.body.bookId + ' is already in Pending list.' });
+                    } else {
+                        req.user.futureBooks.push(req.body.bookId);
+                        req.user.save()
+                            .then((user) => {
+                                console.log("Knjiga je dodata u Pending listu");
+                                res.statusCode = 200;
+                                res.setHeader('Content-Type', 'application/json');
+                                res.json(user.futureBooks);
+                            }, error => {
+                                console.log(error);
+                            })
+                    }
+                } else {
+                    res.statusCode = 404;
+                    res.end('You can add books only to your own lists.');
+                }
+            }, (err) => {
+                res.statusCode = 404;
+                res.end('Book ' + req.body.bookId + 'does not exist.');
+            })
+            .catch((err) => {
+                next(err)
+            });
+    });
+
+router.route('/removeBook/fromReadingList')
+    .put(cors.corsWithOptions, authenticate.verifyUser, (req, res, next) => {
+        Books.findOne({ _id: req.body.bookId })
+            .then((book) => {
+                if ((req.user.username == req.body.user) || (req.user.type == "admin")) {
+                    if (req.user.presentBooks.includes(req.body.bookId)) {
+                        req.user.presentBooks.splice(req.user.presentBooks.indexOf(req.body.bookId), 1);
+                        req.user.save()
+                            .then((user) => {
+                                res.statusCode = 200;
+                                res.setHeader('Content-Type', 'application/json');
+                                res.json(user.presentBooks);
+                            }, error => {
+                                console.log(error);
+                            })
+                    } else {
+                        res.statusCode = 200;
+                        res.setHeader('Content-Type', 'application/json');
+                        res.json({ message: 'Book ' + req.body.bookId + ' is already not in Reading list.' });
+                    }
+                } else {
+                    res.statusCode = 404;
+                    res.end('You can remove books only from your own lists.');
+                }
+            }, (err) => {
+                res.statusCode = 404;
+                res.end('Book ' + req.body.bookId + 'does not exist.');
+            })
+            .catch((err) => {
+                next(err)
+            });
+    });
+
+router.route('/removeBook/fromFinishedList')
+    .put(cors.corsWithOptions, authenticate.verifyUser, (req, res, next) => {
+        Books.findOne({ _id: req.body.bookId })
+            .then((book) => {
+                if ((req.user.username == req.body.user) || (req.user.type == "admin")) {
+                    if (req.user.pastBooks.includes(req.body.bookId)) {
+                        req.user.pastBooks.splice(req.user.pastBooks.indexOf(req.body.bookId), 1);
+                        req.user.save()
+                            .then((user) => {
+                                res.statusCode = 200;
+                                res.setHeader('Content-Type', 'application/json');
+                                res.json(user.pastBooks);
+                            }, error => {
+                                console.log(error);
+                            })
+                    } else {
+                        res.statusCode = 200;
+                        res.setHeader('Content-Type', 'application/json');
+                        res.json({ message: 'Book ' + req.body.bookId + ' is already not in Finished list.' });
+                    }
+                } else {
+                    res.statusCode = 404;
+                    res.end('You can remove books only from your own lists.');
+                }
+            }, (err) => {
+                res.statusCode = 404;
+                res.end('Book ' + req.body.bookId + 'does not exist.');
+            })
+            .catch((err) => {
+                next(err)
+            });
+    });
+
+router.route('/removeBook/fromPendingList')
+    .put(cors.corsWithOptions, authenticate.verifyUser, (req, res, next) => {
+        Books.findOne({ _id: req.body.bookId })
+            .then((book) => {
+                if ((req.user.username == req.body.user) || (req.user.type == "admin")) {
+                    if (req.user.futureBooks.includes(req.body.bookId)) {
+                        req.user.futureBooks.splice(req.user.futureBooks.indexOf(req.body.bookId), 1);
+                        req.user.save()
+                            .then((user) => {
+                                res.statusCode = 200;
+                                res.setHeader('Content-Type', 'application/json');
+                                res.json(user.futureBooks);
+                            }, error => {
+                                console.log(error);
+                            })
+                    } else {
+                        res.statusCode = 200;
+                        res.setHeader('Content-Type', 'application/json');
+                        res.json({ message: 'Book ' + req.body.bookId + ' is already not in Pending list.' });
+                    }
+                } else {
+                    res.statusCode = 404;
+                    res.end('You can remove books only from your own lists.');
+                }
+            }, (err) => {
+                res.statusCode = 404;
+                res.end('Book ' + req.body.bookId + 'does not exist.');
+            })
+            .catch((err) => {
+                next(err)
+            });
+    });
+
 module.exports = router;

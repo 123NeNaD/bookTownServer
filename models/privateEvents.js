@@ -20,6 +20,10 @@ var privateEventSchema = new Schema({
         required: true,
         unique: true
     },
+    image: {
+        type: String,
+        default: 'images/PrivateEvent.png'
+    },
     begin: {
         type: Date,
         required: true
